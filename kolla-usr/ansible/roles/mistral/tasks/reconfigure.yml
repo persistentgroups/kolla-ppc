@@ -1,0 +1,5 @@
+---
+- include: do_reconfigure.yml
+  when: inventory_hostname in groups['mistral-api']
+        or inventory_hostname in groups['mistral-engine']
+        or inventory_hostname in groups['mistral-executor']

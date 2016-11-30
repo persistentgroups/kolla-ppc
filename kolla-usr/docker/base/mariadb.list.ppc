@@ -1,0 +1,3 @@
+# Mariadb
+deb http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.0/ubuntu xenial main
+

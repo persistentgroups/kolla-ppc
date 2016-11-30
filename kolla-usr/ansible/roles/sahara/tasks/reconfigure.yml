@@ -1,0 +1,4 @@
+---
+- include: do_reconfigure.yml
+  when: inventory_hostname in groups['sahara-api']
+        or inventory_hostname in groups['sahara-engine']

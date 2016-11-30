@@ -1,0 +1,6 @@
+---
+- include: do_reconfigure.yml
+  when: inventory_hostname in groups['aodh-api']
+        or inventory_hostname in groups['aodh-listener']
+        or inventory_hostname in groups['aodh-evaluator']
+        or inventory_hostname in groups['aodh-notifier']

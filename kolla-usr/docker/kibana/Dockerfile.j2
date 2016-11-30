@@ -1,0 +1,31 @@
+FROM {{ namespace }}/{{ image_prefix }}base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% block kibana_header %}{% endblock %}
+
+{% import "macros.j2" as macros with context %}
+
+RUN useradd -r -m --user-group kibana \
+    && usermod -a -G kolla kibana
+
+{% if base_arch in ['ppc64le'] %}
+RUN apt-get install gcc  make autoconf build-essential wget -y
+RUN wget https://download.elastic.co/kibana/kibana/kibana-4.6.2-linux-x86_64.tar.gz ; \
+    tar -xvf /kibana-4.6.2-linux-x86_64.tar.gz ; \
+    mv /kibana-4.6.2-linux-x86_64 /opt/kibana
+RUN wget http://nodejs.org/dist/v4.4.7/node-v4.4.7-linux-ppc64le.tar.gz ; \
+    tar -xvf /node-v4.4.7-linux-ppc64le.tar.gz ; \
+    cp /node-v4.4.7-linux-ppc64le/bin/*  /opt/kibana/node/bin/ ; \
+    chmod +x /opt/kibana/node/bin/node
+
+{% else %}
+{% set kibana_packages = ['kibana'] %}
+{{ macros.install_packages(kibana_packages | customizable("packages")) }}
+
+{% endif %}
+
+{% block kibana_footer %}{% endblock %}
+{% block footer %}{% endblock %}
+{{ include_footer }}
+
+USER kibana

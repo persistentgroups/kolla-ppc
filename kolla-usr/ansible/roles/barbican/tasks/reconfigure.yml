@@ -1,0 +1,5 @@
+---
+- include: do_reconfigure.yml
+  when: inventory_hostname in groups['barbican-api']
+        or inventory_hostname in groups['barbican-keystone-listener']
+        or inventory_hostname in groups['barbican-worker']

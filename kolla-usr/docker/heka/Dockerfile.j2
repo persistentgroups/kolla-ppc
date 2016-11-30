@@ -1,0 +1,63 @@
+FROM {{ namespace }}/{{ image_prefix }}base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% block heka_header %}{% endblock %}
+
+{% import "macros.j2" as macros with context %}
+
+{% if base_arch in ['ppc64le'] %}
+ENV GODEBUG=cgocheck=0
+RUN useradd --user-group heka \
+    && mkdir /etc/heka
+RUN apt-get  -y install  --no-install-recommends  git build-essential debhelper golang cmake fakeroot
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+RUN git clone https://github.com/mozilla-services/heka \
+    && cd /heka \
+    && source /heka/build.sh ; \
+    cd /heka/build ; \
+    make install ; \
+    cp -r /heka/build/heka/bin/*  /usr/bin/ ; \
+    cp -r /heka/build/heka/include/*  /usr/include/ ; \
+    cp -r /heka/build/heka/lib/*  /usr/lib/ ; \
+    cp -r /heka/build/heka/share/*  /usr/share/ ; \
+    cp -r /heka/build/heka/src/*  /usr/src/ ; \
+    cp -r /usr/local/share/heka/ /usr/share/  
+#COPY heka_0.11.0_ppc64el.deb /root/heka_0.11.0_ppc64el.deb 
+#RUN dpkg -i /root/heka_0.11.0_ppc64el.deb ; \
+#    apt-get install -f .
+{% else %}
+
+
+{% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+    {% set heka_packages = [
+        'https://github.com/mozilla-services/heka/releases/download/v0.10.0/heka-0_10_0-linux-amd64.rpm'
+    ] %}
+RUN useradd --user-group heka \
+    && mkdir /etc/heka
+
+{% elif base_distro in ['ubuntu', 'debian'] %}
+    {% set heka_packages = [
+        'https://github.com/mozilla-services/heka/releases/download/v0.10.0/heka_0.10.0_amd64.deb'
+    ] %}
+{% endif %}
+
+{% endif %}
+{{ macros.install_packages(heka_packages | customizable("packages")) }}
+
+COPY plugins/modules /usr/share/heka/lua_modules/
+COPY plugins/decoders /usr/share/heka/lua_decoders/
+COPY plugins/encoders /usr/share/heka/lua_encoders/
+
+COPY heka_sudoers /etc/sudoers.d/kolla_heka_sudoers
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+
+RUN usermod -a -G kolla heka \
+    && chmod 440 /etc/sudoers.d/kolla_heka_sudoers \
+    && chmod 755 /usr/local/bin/kolla_extend_start \
+    && chown -R heka: /usr/share/heka /etc/heka
+
+{% block heka_footer %}{% endblock %}
+{% block footer %}{% endblock %}
+{{ include_footer }}
+
+USER heka
